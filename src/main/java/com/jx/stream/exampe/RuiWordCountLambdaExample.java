@@ -214,7 +214,7 @@ public class RuiWordCountLambdaExample {
 				.groupBy((key, word) -> word).count();
 		
 		
-		wordCounts.print();
+//		wordCounts.print();
 
 		// Write the `KTable<String, Long>` to the output topic.streams-wordcount-output
 		wordCounts.toStream().to("streams-wordcount-output2", Produced.with(stringSerde, longSerde));
