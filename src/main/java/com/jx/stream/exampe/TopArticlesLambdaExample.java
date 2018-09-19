@@ -16,8 +16,15 @@
 package com.jx.stream.exampe;
 
 
-import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
-import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -36,17 +43,9 @@ import org.apache.kafka.streams.kstream.Serialized;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.kstream.WindowedSerdes;
-
 import com.jx.stream.utils.exam.PriorityQueueSerde;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
+import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
+import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
 
 /**
  *
@@ -113,7 +112,7 @@ public class TopArticlesLambdaExample {
 
   public static void main(final String[] args) throws Exception {
     final String bootstrapServers = args.length > 0 ? args[0] : "localhost:9092";
-    final String schemaRegistryUrl = args.length > 1 ? args[1] : "http://localhost:8081";
+    final String schemaRegistryUrl = args.length > 1 ? args[1] : "http://localhost:9091";
     final KafkaStreams streams = buildTopArticlesStream(
         bootstrapServers,
         schemaRegistryUrl,

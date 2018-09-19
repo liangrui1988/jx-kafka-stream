@@ -60,16 +60,16 @@ import java.util.stream.IntStream;
 public class TopArticlesExampleDriver {
 
   public static void main(String[] args) throws IOException {
-    final String bootstrapServers = args.length > 0 ? args[0] : "localhost:9092";
-    final String schemaRegistryUrl = args.length > 1 ? args[1] : "http://localhost:8081";
+    final String bootstrapServers = args.length > 0 ? args[0] : "39.108.114.201:9092";
+    final String schemaRegistryUrl = args.length > 1 ? args[1] : "http://39.108.114.201:9091";
     produceInputs(bootstrapServers, schemaRegistryUrl);
     consumeOutput(bootstrapServers, schemaRegistryUrl);
   }
 
   private static void produceInputs(String bootstrapServers, String schemaRegistryUrl) throws IOException {
-    final String[] users = {"erica", "bob", "joe", "damian", "tania", "phil", "sam",
+    final String[] users = {"小明", "小红", "小狗", "小猫", "小猪", "小羊", "小牛",
         "lauren", "joseph"};
-    final String[] industries = {"engineering", "telco", "finance", "health", "science"};
+    final String[] industries = {"家电类", "衣服类", "家具类", "工业类", "吃类"};
     final String[] pages = {"index.html", "news.html", "contact.html", "about.html", "stuff.html"};
 
     final Properties props = new Properties();
@@ -120,7 +120,7 @@ public class TopArticlesExampleDriver {
     while (true) {
       ConsumerRecords<Windowed<String>, String> consumerRecords = consumer.poll(Long.MAX_VALUE);
       for (ConsumerRecord<Windowed<String>, String> consumerRecord : consumerRecords) {
-        System.out.println(consumerRecord.key().key() + "@" + consumerRecord.key().window().start() +  "=" + consumerRecord.value());
+        System.out.println(consumerRecord.key().key() + ">" + consumerRecord.key().window().start() +  "=" + consumerRecord.value()+" end ");
       }
     }
   }
