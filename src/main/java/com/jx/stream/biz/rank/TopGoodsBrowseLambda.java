@@ -153,6 +153,7 @@ public class TopGoodsBrowseLambda {
 					viewStats.put("count", count);
 					return new KeyValue<>(windowedIndustry, viewStats);
 				}, Serialized.with(windowedStringSerde, valueAvroSerde)).aggregate(
+						// 合计原始记录的价值,和老数据聚合
 						// the initializer
 						() -> new PriorityQueue<>(comparator),
 
@@ -171,6 +172,7 @@ public class TopGoodsBrowseLambda {
 						Materialized.with(windowedStringSerde, new PriorityQueueSerde<>(comparator, valueAvroSerde)));
 
 		final int topN = 100;
+		// mapValues 取一个记录，产生0、1或更多的记录。您可以修改记录键和值，包括它们的类型。
 		final KTable<Windowed<String>, String> topViewCounts = allViewCounts.mapValues(queue -> {
 			final StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < topN; i++) {
