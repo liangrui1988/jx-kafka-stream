@@ -14,7 +14,7 @@ public class ConsumerBuilder {
 	/**
 	 * 服务连接
 	 */
-	private String bootstrapServers = "192.168.20.243:9092";
+	private String bootstrapServers = "39.108.114.201:9092";
 	/**
 	 * 组
 	 */
