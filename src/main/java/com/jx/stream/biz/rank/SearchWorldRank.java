@@ -6,6 +6,8 @@ import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
@@ -18,6 +20,7 @@ import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.Serialized;
 import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.kstream.ValueMapperWithKey;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.kstream.WindowedSerdes;
 import org.slf4j.Logger;
@@ -32,8 +35,8 @@ import com.jx.stream.utils.exam.PriorityQueueSerde;
  * @author ruilinag
  *
  */
-public class SearchWorldRankV2 {
-	static Logger logger = LoggerFactory.getLogger(SearchWorldRankV2.class);
+public class SearchWorldRank {
+	static Logger logger = LoggerFactory.getLogger(SearchWorldRank.class);
 
 	static final String TOP_NEWS_PER_INDUSTRY_TOPIC = "js-realtime";
 	static final String RANK_OUP_TOPIC = "streams-wordcount-output2";
@@ -95,65 +98,25 @@ public class SearchWorldRankV2 {
 				.windowedBy(TimeWindows.of(TimeUnit.SECONDS.toMillis(30))).count();
 		// .groupBy((key, word) -> word).count();
 
-		// KTable<Windowed<String>, Long> transformed = timeWindowsGroup.map(
-		// (key, value) -> KeyValue.pair(value.toLowerCase(), value.length()));
-		KTable<Windowed<String>, String> mapValuesxx = timeWindowsGroup.mapValues(value -> {
-			//如何取到key;
-			return value.toString();
-		});
-
-		// 比较器
-		final Comparator<String> comparator = (o1, o2) -> (int) (JSONObject.parseObject(o2).getInteger("count")
-				- JSONObject.parseObject(o1).getInteger("count"));
-
-		final KTable<Windowed<String>, PriorityQueue<String>> allViewCounts = timeWindowsGroup.groupBy(
-				// the selector
-				(windowedArticle, count) -> {
-					JSONObject src_value_root = (JSONObject) JSONObject.parse(windowedArticle.key());
-					// project on the industry field for key
-					Windowed<String> windowedIndustry = new Windowed<>(windowedArticle.key(), windowedArticle.window());
-					// add the page into the value
-					// 加入数量
-					src_value_root.put("count", count);
-					return new KeyValue<>(windowedIndustry, src_value_root.toJSONString());
-				}, Serialized.with(windowedStringSerde, stringSerde)).aggregate(
-						// 合计原始记录的价值,和老数据聚合
-						// the initializer
-						() -> new PriorityQueue<>(comparator),
-
-						// the "add" aggregator
-						(windowedIndustry, record, queue) -> {
-							queue.add(record);
-							return queue;
-						},
-
-						// the "remove" aggregator
-						(windowedIndustry, record, queue) -> {
-							queue.remove(record);
-							return queue;
-						}, Materialized.with(windowedStringSerde,
-								new PriorityQueueSerde<String>(comparator, stringSerde)));
-
-		// 最后的值格式
-		final int topN = 100;
-		// mapValues 取一个记录，产生0、1或更多的记录。您可以修改记录键和值，包括它们的类型。
-		final KTable<Windowed<String>, String> all_topViewCounts = allViewCounts.mapValues(queue -> {
-			// final StringBuilder sb = new StringBuilder();
-			// for (int i = 0; i < topN; i++) { 不需要排序
-			final String record = queue.poll();
-			if (record == null) {
-				return record;
-			}
-			// sb.append(record.get("page").toString());
-			// sb.append("\n");
-			// }
-			System.out.println("all_topViewCounts record.toString()=" + record.toString());
-			return record.toString();
-		});
+		// 取出key,生成新的key
+		KTable<Windowed<String>, String> mapValues_kTable = timeWindowsGroup
+				.mapValues(new ValueMapperWithKey<Windowed<String>, Long, String>() {
+					// 返回新值
+					@Override
+					public String apply(Windowed<String> readOnlyKey, Long value) {
+						// project on the industry field for key
+						// Windowed<String> windowedIndustry = new Windowed<>(readOnlyKey.key(),
+						// readOnlyKey.window());
+						// add the page into the value
+						JSONObject src_value_root = (JSONObject) JSONObject.parse(readOnlyKey.key());
+						// 加入数量
+						src_value_root.put("count", value);
+						return src_value_root.toJSONString();
+					}
+				});
 
 		// 发送到下游
-		all_topViewCounts.toStream().to(RANK_OUP_TOPIC, Produced.with(windowedStringSerde, stringSerde));
-
+		mapValues_kTable.toStream().to(RANK_OUP_TOPIC, Produced.with(windowedStringSerde, stringSerde));
 		// 开始构建
 		final KafkaStreams streams = new KafkaStreams(builder.build(), streamsConfiguration);
 		streams.cleanUp();

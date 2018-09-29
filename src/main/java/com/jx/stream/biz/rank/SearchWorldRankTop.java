@@ -32,8 +32,8 @@ import com.jx.stream.utils.exam.PriorityQueueSerde;
  * @author ruilinag
  *
  */
-public class SearchWorldRank {
-	static Logger logger = LoggerFactory.getLogger(SearchWorldRank.class);
+public class SearchWorldRankTop {
+	static Logger logger = LoggerFactory.getLogger(SearchWorldRankTop.class);
 
 	static final String TOP_NEWS_PER_INDUSTRY_TOPIC = "js-realtime";
 	static final String RANK_OUP_TOPIC = "streams-wordcount-output2";
