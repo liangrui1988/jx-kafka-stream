@@ -32,8 +32,8 @@ import com.jx.stream.utils.exam.PriorityQueueSerde;
  * @author ruilinag
  *
  */
-public class SearchWorldRankV2 {
-	static Logger logger = LoggerFactory.getLogger(SearchWorldRankV2.class);
+public class SearchWorldRank {
+	static Logger logger = LoggerFactory.getLogger(SearchWorldRank.class);
 
 	static final String TOP_NEWS_PER_INDUSTRY_TOPIC = "js-realtime";
 	static final String RANK_OUP_TOPIC = "streams-wordcount-output2";
@@ -95,17 +95,11 @@ public class SearchWorldRankV2 {
 				.windowedBy(TimeWindows.of(TimeUnit.SECONDS.toMillis(30))).count();
 		// .groupBy((key, word) -> word).count();
 
-		// KTable<Windowed<String>, Long> transformed = timeWindowsGroup.map(
-		// (key, value) -> KeyValue.pair(value.toLowerCase(), value.length()));
-		KTable<Windowed<String>, String> mapValuesxx = timeWindowsGroup.mapValues(value -> {
-			//如何取到key;
-			return value.toString();
-		});
-
 		// 比较器
 		final Comparator<String> comparator = (o1, o2) -> (int) (JSONObject.parseObject(o2).getInteger("count")
 				- JSONObject.parseObject(o1).getInteger("count"));
-
+		
+		
 		final KTable<Windowed<String>, PriorityQueue<String>> allViewCounts = timeWindowsGroup.groupBy(
 				// the selector
 				(windowedArticle, count) -> {
