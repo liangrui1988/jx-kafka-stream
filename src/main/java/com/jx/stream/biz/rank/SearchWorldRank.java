@@ -1,13 +1,9 @@
 
 package com.jx.stream.biz.rank;
 
-import java.util.Comparator;
-import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
@@ -16,7 +12,6 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.Serialized;
 import org.apache.kafka.streams.kstream.TimeWindows;
@@ -27,22 +22,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSONObject;
-import com.jx.stream.utils.exam.PriorityQueueSerde;
 
 /**
  * 提取json字段，统计数量，并发送到topic
  * 
  * @author ruilinag
+ * @date 2018-09-30
  *
  */
 public class SearchWorldRank {
 	static Logger logger = LoggerFactory.getLogger(SearchWorldRank.class);
 
 	static final String TOP_NEWS_PER_INDUSTRY_TOPIC = "js-realtime";
-	static final String RANK_OUP_TOPIC = "streams-wordcount-output2";
+	static final String RANK_OUP_TOPIC = "streams-rank";
 
 	public static void main(final String[] args) throws Exception {
-		final String bootstrapServers = args.length > 0 ? args[0] : "39.108.114.201:9092";
+		// final String bootstrapServers = args.length > 0 ? args[0] :
+		// "39.108.114.201:9092";
+		final String bootstrapServers = args.length > 0 ? args[0] : "127.0.0.1:9092";
 		final Properties streamsConfiguration = new Properties();
 
 		// application.id
@@ -55,15 +52,16 @@ public class SearchWorldRank {
 		streamsConfiguration.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
 		// 记录应该每10秒刷新一次。这比默认值要小
 		// 为了保持这个示例的交互性。
-		streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000);
+		// streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000);
 		// 为了便于说明，我们禁用了记录缓存
-		streamsConfiguration.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
+		// streamsConfiguration.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
 		// 数据目录 /tmp/kafka-streams D:\tmp\kafka-streams
-		streamsConfiguration.put(StreamsConfig.STATE_DIR_CONFIG, "D:\\tmp\\kafka-streams");
-		// In the subsequent lines we define the processing topology of the Streams
-		// application.
+		streamsConfiguration.put(StreamsConfig.STATE_DIR_CONFIG, "/tmp/kafka-streams");
 		final StreamsBuilder builder = new StreamsBuilder();
 
+		// 输出一个结果
+		// final KStream<String, String> textLines =
+		// builder.table(TOP_NEWS_PER_INDUSTRY_TOPIC);
 		final KStream<String, String> textLines = builder.stream(TOP_NEWS_PER_INDUSTRY_TOPIC);
 
 		// 格式值
@@ -76,25 +74,21 @@ public class SearchWorldRank {
 					// 提取需要的字段
 					json_value.put("project", src_value.get("project"));// 项目
 					json_value.put("search_word", src_value.getJSONObject("properties").get("search_word"));// 搜索词
+					json_value.put("event", src_value.getString("event"));
+					json_value.put("channel", src_value.getJSONObject("properties").getString("channel"));
 					logger.info("apply return text={}", json_value.toJSONString());
 					return new KeyValue<>(json_value.toJSONString(), json_value.toJSONString());
 				});
 
-		final Serde<String> k_stringSerde = Serdes.String();
 		final Serde<String> stringSerde = Serdes.String();
-		// Set up serializers and deserializers, which we will use for overriding the
-		// default serdes
-		// specified above.
-		// final Serde<String> stringSerde = Serdes.String();
-		final Serde<Windowed<String>> windowedStringSerde = WindowedSerdes.timeWindowedSerdeFrom(String.class);
-
 		final Serde<Long> longSerde = Serdes.Long();
 
+		final Serde<Windowed<String>> windowedStringSerde = WindowedSerdes.timeWindowedSerdeFrom(String.class);
 		// 分组，
 		final KTable<Windowed<String>, Long> timeWindowsGroup = fastValue
 				// 计算每小时的点击量，使用一个小时的滚动窗口
 				// 时间窗口，每5分钟输出一次，按key分组
-				.groupByKey(Serialized.with(k_stringSerde, stringSerde))
+				.groupByKey(Serialized.with(stringSerde, stringSerde))
 				.windowedBy(TimeWindows.of(TimeUnit.SECONDS.toMillis(30))).count();
 		// .groupBy((key, word) -> word).count();
 
@@ -104,10 +98,6 @@ public class SearchWorldRank {
 					// 返回新值
 					@Override
 					public String apply(Windowed<String> readOnlyKey, Long value) {
-						// project on the industry field for key
-						// Windowed<String> windowedIndustry = new Windowed<>(readOnlyKey.key(),
-						// readOnlyKey.window());
-						// add the page into the value
 						JSONObject src_value_root = (JSONObject) JSONObject.parse(readOnlyKey.key());
 						// 加入数量
 						src_value_root.put("count", value);
@@ -123,7 +113,6 @@ public class SearchWorldRank {
 		streams.start();
 		// 添加关闭钩子来响应SIGTERM并优雅地关闭
 		Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
-
 	}
 
 	public static boolean iSsearchProduct(String text) {

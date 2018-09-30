@@ -54,7 +54,7 @@ public class SearchWorldRankTop {
 		// 为了保持这个示例的交互性。
 		streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000);
 		// 为了便于说明，我们禁用了记录缓存
-		streamsConfiguration.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
+//		streamsConfiguration.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
 		// 数据目录 /tmp/kafka-streams D:\tmp\kafka-streams
 		streamsConfiguration.put(StreamsConfig.STATE_DIR_CONFIG, "D:\\tmp\\kafka-streams");
 		// In the subsequent lines we define the processing topology of the Streams
@@ -98,8 +98,7 @@ public class SearchWorldRankTop {
 		// 比较器
 		final Comparator<String> comparator = (o1, o2) -> (int) (JSONObject.parseObject(o2).getInteger("count")
 				- JSONObject.parseObject(o1).getInteger("count"));
-		
-		
+
 		final KTable<Windowed<String>, PriorityQueue<String>> allViewCounts = timeWindowsGroup.groupBy(
 				// the selector
 				(windowedArticle, count) -> {
@@ -129,7 +128,6 @@ public class SearchWorldRankTop {
 								new PriorityQueueSerde<String>(comparator, stringSerde)));
 
 		// 最后的值格式
-		final int topN = 100;
 		// mapValues 取一个记录，产生0、1或更多的记录。您可以修改记录键和值，包括它们的类型。
 		final KTable<Windowed<String>, String> all_topViewCounts = allViewCounts.mapValues(queue -> {
 			// final StringBuilder sb = new StringBuilder();
@@ -143,6 +141,11 @@ public class SearchWorldRankTop {
 			// }
 			System.out.println("all_topViewCounts record.toString()=" + record.toString());
 			return record.toString();
+		}).filter((dummy, record) -> {
+			if (dummy == null || record == null) {
+				return false;
+			}
+			return true;
 		});
 
 		// 发送到下游
