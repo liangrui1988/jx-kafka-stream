@@ -96,22 +96,91 @@
 		</dependency>
 	</dependencies>
 
+	<!-- <build> -->
+	<!-- <plugins> -->
+	<!-- <plugin> -->
+	<!-- <artifactId>maven-assembly-plugin</artifactId> -->
+	<!-- <configuration> -->
+	<!-- 这部分可有可无,加上的话则直接生成可运行jar包 -->
+	<!-- <archive> -->
+	<!-- <manifest> -->
+	<!-- <mainClass>${exec.mainClass}</mainClass> -->
+	<!-- </manifest> -->
+	<!-- </archive> -->
+	<!-- <descriptorRefs> -->
+	<!-- <descriptorRef>jar-with-dependencies</descriptorRef> -->
+	<!-- </descriptorRefs> -->
+	<!-- </configuration> -->
+	<!-- </plugin> -->
+	<!-- </plugins> -->
+	<!-- </build> -->
+
 	<build>
+		<finalName>jx-kafka-stream</finalName>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-dependency-plugin</artifactId>
+										<versionRange>[2.0,)</versionRange>
+										<goals>
+											<goal>copy-dependencies</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
 			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.4</version>
 				<configuration>
-					<!--这部分可有可无,加上的话则直接生成可运行jar包 -->
-					<!--<archive> -->
-					<!--<manifest> -->
-					<!--<mainClass>${exec.mainClass}</mainClass> -->
-					<!--</manifest> -->
-					<!--</archive> -->
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>lib/</classpathPrefix>
+							<!-- 主方法所在类名 -->
+<!-- 							<mainClass>com.hbase2Redis.Hbase2Redis</mainClass> -->
+						</manifest>
+					</archive>
 				</configuration>
+			</plugin>
+			<!-- 将依赖包放到lib文件夹中 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>
+								${project.build.directory}/lib
+							</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
+
 </project>
