@@ -49,11 +49,11 @@ public class RankStream {
 		// Specify default (de)serializers for record keys and for record values.
 		streamsConfiguration.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
 		streamsConfiguration.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-		// 记录应该每10秒刷新一次。这比默认值要小
+		// 记录应该每10秒刷新一次。这比默认(30000)值要小
 		// 为了保持这个示例的交互性。
-		// streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000);
-		// 为了便于说明，我们禁用了记录缓存
-		// streamsConfiguration.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
+//		 streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000);
+		// 为了便于说明，我们禁用了记录缓存>>在所有线程中缓冲的最大内存字节数
+//		 streamsConfiguration.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
 		// 数据目录 /tmp/kafka-streams D:\tmp\kafka-streams
 		streamsConfiguration.put(StreamsConfig.STATE_DIR_CONFIG, "/tmp/kafka-streams");
 		final StreamsBuilder builder = new StreamsBuilder();
